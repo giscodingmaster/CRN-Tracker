@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gas CRN Tracker - Live Database</title>
+    <title>Gas CRN Tracker - Live Database (TypeScript Version)</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -39,19 +39,18 @@
         .back-btn, .manager-login-btn { background: #fff; border: 1px solid var(--border-color); color: var(--muted-text); border-radius: 8px; height: 40px; padding: 0 15px; font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 8px; }
         .back-btn:hover, .manager-login-btn:hover { background: var(--primary-color); color: white; border-color: var(--primary-color); }
         .page { display: none; } .page.active { display: block; }
-        .button-group { display: flex; flex-direction: column; align-items: center; gap: 15px; margin-top: 20px; }
-        .crn-item { border: 1px solid var(--border-color); border-radius: 10px; padding: 20px; margin-bottom: 15px; background-color: #fdfdfd; }
+        .crn-item { border: 1px solid var(--border-color); border-radius: 10px; padding: 20px; margin-bottom: 15px; background-color: #fdfdfd; transition: all 0.2s ease-out; }
         .crn-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; }
         .crn-id { font-weight: 600; font-size: 20px; color: var(--primary-color); }
         .status-badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 500; border: 1px solid; }
-        .status-unknown { background-color: #f0f0f0; border-color: #d1d1d1; color: #555; }
-        .status-site { background-color: #fff8e1; border-color: #ffe082; color: #795548; }
+        .status-unknown { background-color: #fff8e1; border-color: #ffe082; color: #795548;}
+        .status-site { background-color: #ede7f6; border-color: #d1c4e9; color: #4527a0;}
         .status-field { background-color: #e3f2fd; border-color: #90caf9; color: #0d47a1; }
         .status-map { background-color: #e8f5e9; border-color: #a5d6a7; color: #1b5e20; }
         .crn-details { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; padding-top: 15px; border-top: 1px solid var(--border-color); }
-        .detail-item .detail-label { font-size: 13px; color: var(--muted-text); margin-bottom: 2px; }
+        .detail-item .detail-label { font-size: 13px; color: var(--muted-text); margin-bottom: 4px; display: flex; align-items: center; gap: 6px; }
         .actions { display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap; justify-content: flex-end; }
-        .action-btn { flex-grow: 1; max-width: 220px; }
+        .action-btn { flex: 1 1 180px; }
         .filter-section { background-color: var(--white-bg); border-radius: 12px; padding: 20px; margin-bottom: 25px; border-top: 4px solid var(--primary-color); }
         .filter-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
         .filter-title { font-size: 20px; font-weight: 600; color: var(--dark-text); flex-grow: 1; }
@@ -66,6 +65,38 @@
         .loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--light-bg); display: flex; justify-content: center; align-items: center; z-index: 2000; }
         .loader { border: 5px solid #f3f3f3; border-top: 5px solid var(--primary-color); border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        .results-info { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; padding: 15px; background: var(--white-bg); border-radius: 12px; border: 1px solid var(--border-color); }
+        .results-count { font-size: 16px; font-weight: 500; color: var(--primary-color); }
+        .pagination-controls { display: flex; justify-content: center; align-items: center; gap: 10px; margin: 20px 0; }
+        .pagination-btn { padding: 8px 16px; border: 1px solid var(--border-color); background: var(--white-bg); color: var(--dark-text); border-radius: 6px; cursor: pointer; transition: all 0.2s; }
+        .pagination-btn:hover { background: var(--primary-color); color: white; border-color: var(--primary-color); }
+        .pagination-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .pagination-btn:disabled:hover { background: var(--white-bg); color: var(--dark-text); border-color: var(--border-color); }
+        .page-size-selector { display: flex; align-items: center; gap: 10px; }
+        .search-box { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border-color); font-size: 16px; background-color: var(--light-bg); margin-bottom: 15px; }
+        .table-container { overflow-x: auto; }
+        #buildings-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        #buildings-table th, #buildings-table td { padding: 12px; text-align: right; border-bottom: 1px solid var(--border-color); }
+        #buildings-table th { background-color: var(--light-bg); font-weight: 600; }
+        #buildings-table tr:hover { background-color: #f8f9fa; }
+        .completed-row { background-color: #e8f5e9 !important; }
+
+        .crn-item, .card, .filter-section, .results-info, .stat-card { animation: fadeIn 0.5s ease-in-out forwards; opacity: 0; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+        .crn-item:hover { transform: translateY(-3px); box-shadow: 0 8px 15px rgba(0, 0, 0, 0.07); }
+        
+        .button-group-ux { display: flex; flex-direction: column; gap: 20px; margin-top: 20px; }
+        .btn-ux { display: flex; align-items: center; justify-content: space-between; padding: 20px 25px; font-size: 18px; border-radius: 12px; text-align: right; }
+        .btn-ux-icon { margin-left: 15px; }
+        .btn-ux-text { flex-grow: 1; }
+        .btn-ux-badge { background-color: rgba(255, 255, 255, 0.2); padding: 5px 12px; border-radius: 20px; font-weight: 600; font-size: 16px; min-width: 40px; text-align: center; }
+
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 25px; }
+        .stat-card { background-color: #fff; padding: 20px; border-radius: 12px; text-align: center; border: 1px solid var(--border-color); }
+        .stat-icon { width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; margin: 0 auto 15px; }
+        .stat-value { font-size: 28px; font-weight: 600; color: var(--dark-text); }
+        .stat-label { font-size: 14px; color: var(--muted-text); }
     </style>
 </head>
 <body>
@@ -79,41 +110,133 @@
                 <div class="header-content"><h1><i class="fas fa-fire"></i> Gas CRN Tracker</h1><p>نظام متابعة وتأكيد توصيل الغاز الطبيعي للمباني</p></div>
                 <div style="width:110px"></div>
             </div>
-            <div class="card"><h2 style="text-align: center; margin-bottom: 25px; font-weight: 600;">اختر واجهة المستخدم</h2><div class="button-group"><button class="btn btn-primary" onclick="showPage('main-page', 'office')"><i class="fas fa-building"></i> المطلوب من المكتب</button><button class="btn btn-secondary" onclick="showPage('main-page', 'field')"><i class="fas fa-hard-hat"></i> المطلوب من الموقع</button></div></div>
+            <div class="card">
+                <h2 style="text-align: center; margin-bottom: 25px; font-weight: 600;">اختر واجهة المستخدم</h2>
+                <div class="button-group-ux">
+                    <button class="btn btn-primary btn-ux" onclick="showPage('main-page', 'office')">
+                        <span class="btn-ux-icon"><i class="fas fa-building"></i></span>
+                        <span class="btn-ux-text">المطلوب من المكتب</span>
+                        <span id="office-task-count" class="btn-ux-badge">...</span>
+                    </button>
+                    <button class="btn btn-secondary btn-ux" onclick="showPage('main-page', 'field')">
+                        <span class="btn-ux-icon"><i class="fas fa-hard-hat"></i></span>
+                        <span class="btn-ux-text">المطلوب من الموقع</span>
+                        <span id="field-task-count" class="btn-ux-badge">...</span>
+                    </button>
+                </div>
+            </div>
         </div>
         
         <!-- Main Task Page (Office & Field) -->
         <div id="main-page" class="page">
              <div class="header"><button class="back-btn" onclick="showPage('home-page')"><i class="fas fa-arrow-right"></i> العودة</button><div class="header-content"><h1 id="user-type-label">مهام المستخدم</h1></div><div style="width: 100px;"></div></div>
-            <div class="filter-section"><div class="filter-header"><div class="filter-title"><i class="fas fa-filter"></i> تصفية المباني</div><div class="filter-actions"><button class="btn btn-sm btn-primary" onclick="exportCurrentView()"><i class="fas fa-file-excel"></i> تصدير</button></div></div><div class="filter-controls"><div class="filter-group"><label class="filter-label">المحافظة</label><select id="governorate-filter" class="filter-select" onchange="updateCityFilter()"><option value="">جميع المحافظات</option></select></div><div class="filter-group"><label class="filter-label">المدينة</label><select id="city-filter" class="filter-select" onchange="updateSectorFilter()"><option value="">جميع المدن</option></select></div><div class="filter-group"><label class="filter-label">القطاع</label><select id="sector-filter" class="filter-select" onchange="updateBlockFilter()"><option value="">جميع القطاعات</option></select></div><div class="filter-group"><label class="filter-label">البلوك</label><select id="block-filter" class="filter-select" onchange="renderCRNList()"><option value="">جميع البلوكات</option></select></div><div class="filter-group" id="status-filter-group" style="display:none;"><label class="filter-label">الحالة</label><select id="status-filter" class="filter-select" onchange="renderCRNList()"><option value="">جميع الحالات</option><option value="unknown">غير معروف</option><option value="field-confirmed">تم التأكيد الميداني</option></select></div></div></div>
-            <div id="crn-list"></div>
+            <div class="filter-section">
+                <div class="filter-header">
+                    <div class="filter-title"><i class="fas fa-filter"></i> تصفية المباني</div>
+                    <div class="filter-actions"><button class="btn btn-sm btn-primary" onclick="exportCurrentView()"><i class="fas fa-file-excel"></i> تصدير</button></div>
+                </div>
+                <input type="text" id="search-box" class="search-box" placeholder="بحث بـ CRN أو اسم المحافظة أو المدينة..." oninput="debounceSearch()">
+                <div class="filter-controls">
+                    <div class="filter-group"><label class="filter-label">المحافظة</label><select id="governorate-filter" class="filter-select" onchange="updateCityFilter()"><option value="">جميع المحافظات</option></select></div>
+                    <div class="filter-group"><label class="filter-label">المدينة</label><select id="city-filter" class="filter-select" onchange="updateSectorFilter()"><option value="">جميع المدن</option></select></div>
+                    <div class="filter-group"><label class="filter-label">القطاع</label><select id="sector-filter" class="filter-select" onchange="updateBlockFilter()"><option value="">جميع القطاعات</option></select></div>
+                    <div class="filter-group"><label class="filter-label">البلوك</label><select id="block-filter" class="filter-select" onchange="renderCRNList()"><option value="">جميع البلوكات</option></select></div>
+                    <div class="filter-group page-size-selector">
+                        <label class="filter-label">عدد النتائج لكل صفحة</label>
+                        <select id="page-size" class="filter-select" onchange="changePageSize()">
+                            <option value="20">20</option><option value="50" selected>50</option><option value="100">100</option><option value="all">الكل</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="results-info">
+                <div class="results-count" id="results-count">عدد النتائج: 0</div>
+                <div class="pagination-controls">
+                    <button class="pagination-btn" id="prev-btn" onclick="previousPage()" disabled><i class="fas fa-chevron-right"></i></button>
+                    <span id="page-info">صفحة 1 من 1</span>
+                    <button class="pagination-btn" id="next-btn" onclick="nextPage()" disabled><i class="fas fa-chevron-left"></i></button>
+                </div>
+            </div>
+            <div id="crn-list"><div class="card" style="text-align:center; color: var(--muted-text);">لا توجد مهام حالياً.</div></div>
         </div>
         
         <!-- Dashboard Page (Manager) -->
         <div id="dashboard-page" class="page">
-             <div class="header"><button class="back-btn" onclick="showPage('home-page')"><i class="fas fa-arrow-right"></i> العودة</button><div class="header-content"><h1><i class="fas fa-chart-pie"></i> لوحة تحكم المدير</h1></div><div style="width: 100px;"></div></div>
-            <div class="card"><h2 style="text-align: center; margin-bottom: 15px; font-weight: 600;">إدارة البيانات</h2><div class="button-group"><label for="file-input" class="btn btn-primary"><i class="fas fa-file-import"></i> إضافة/تحديث بيانات</label><input type="file" id="file-input" onchange="handleFileUpload(event)" accept=".xlsx, .xls" style="display: none;"></div></div>
-            <div class="filter-section"><div class="filter-header"><div class="filter-title"><i class="fas fa-cogs"></i> لوحة التحكم</div><div class="filter-actions"><button class="btn btn-sm btn-primary" onclick="exportCurrentView()"><i class="fas fa-file-excel"></i> تصدير</button><button class="btn btn-sm btn-outline" onclick="resetDashboardFilters()"><i class="fas fa-sync-alt"></i> إعادة تعيين</button><button class="btn btn-sm btn-danger" onclick="handleDeleteFilteredData()"><i class="fas fa-trash"></i> حذف المحدد</button></div></div><div class="filter-controls"><div class="filter-group"><label class="filter-label">المحافظة</label><select id="dashboard-governorate" class="filter-select" onchange="updateDashboardCityFilter()"><option value="">جميع المحافظات</option></select></div><div class="filter-group"><label class="filter-label">المدينة</label><select id="dashboard-city" class="filter-select" onchange="updateDashboardSectorFilter()"><option value="">جميع المدن</option></select></div><div class="filter-group"><label class="filter-label">القطاع</label><select id="dashboard-sector" class="filter-select" onchange="updateDashboardBlockFilter()"><option value="">جميع القطاعات</option></select></div><div class="filter-group"><label class="filter-label">البلوك</label><select id="dashboard-block" class="filter-select" onchange="renderDashboard()"><option value="">جميع البلوكات</option></select></div><div class="filter-group"><label class="filter-label">الحالة</label><select id="dashboard-status-filter" class="filter-select" onchange="renderDashboard()"><option value="">جميع الحالات</option><option value="unknown">غير معروف</option><option value="needs-site-confirmation">يحتاج تأكيد ميداني</option><option value="field-confirmed">تم التأكيد الميداني</option><option value="map-confirmed">تم على الخريطة</option></select></div></div></div>
-            <div class="card"><div class="table-container"><table id="buildings-table"><thead><tr><th>CRN</th><th>المحافظة</th><th>المدينة</th><th>القطاع</th><th>البلوك</th><th>الحالة</th></tr></thead><tbody></tbody></table><div id="dashboard-no-data" style="display:none; text-align:center; padding: 40px; color: var(--muted-text);"><i class="fas fa-table fa-3x" style="margin-bottom: 15px;"></i><h3>لا توجد بيانات للعرض</h3><p>جرب تغيير معايير التصفية أو قم باستيراد ملف بيانات جديد.</p></div></div></div>
-        </div>
-        
-        <div class="footer">Gas CRN Tracker &copy; 2024 - Live Edition</div>
-    </div>
+            <div class="header"><button class="back-btn" onclick="showPage('home-page')"><i class="fas fa-arrow-right"></i> العودة</button><div class="header-content"><h1><i class="fas fa-chart-pie"></i> لوحة تحكم المدير</h1></div><div style="width: 100px;"></div></div>
+            <div class="card"><h2 style="text-align: center; margin-bottom: 15px; font-weight: 600;">إدارة البيانات</h2><div class="button-group-ux" style="flex-direction: row; justify-content: center;"><label for="file-input" class="btn btn-primary"><i class="fas fa-file-import"></i> إضافة/تحديث بيانات</label><input type="file" id="file-input" onchange="handleFileUpload(event)" accept=".xlsx, .xls" style="display: none;"></div></div>
+            
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon" style="background-color: #e8f5e9; color: #1b5e20;"><i class="fas fa-check-double"></i></div>
+                    <div class="stat-value" id="stat-completed">0</div><div class="stat-label">مهام مكتملة</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon" style="background-color: #e3f2fd; color: #0d47a1;"><i class="fas fa-shipping-fast"></i></div>
+                    <div class="stat-value" id="stat-at-field">0</div><div class="stat-label">قيد التنفيذ في الموقع</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon" style="background-color: #fff8e1; color: #795548;"><i class="fas fa-hourglass-half"></i></div>
+                    <div class="stat-value" id="stat-at-office">0</div><div class="stat-label">قيد التنفيذ في المكتب</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon" style="background-color: #fbe9e7; color: #bf360c;"><i class="fas fa-building"></i></div>
+                    <div class="stat-value" id="stat-total">0</div><div class="stat-label">إجمالي المباني</div>
+                </div>
+            </div>
 
-    <!-- Manager Password Modal -->
-    <div id="manager-modal" class="modal-overlay">
-        <div class="modal-content">
-            <h3>دخول المدير</h3>
-            <p style="color: var(--muted-text); margin-bottom: 20px;">الرجاء إدخال كلمة المرور للوصول إلى لوحة التحكم.</p>
-            <input type="password" id="manager-password" class="modal-input" placeholder="كلمة المرور">
-            <div class="modal-actions">
-                <button class="btn btn-primary" onclick="checkManagerPassword()">دخول</button>
-                <button class="btn btn-outline" onclick="closeManagerPrompt()">إلغاء</button>
+            <div class="filter-section">
+                <div class="filter-header">
+                    <div class="filter-title"><i class="fas fa-cogs"></i> لوحة التحكم المفصلة</div>
+                    <div class="filter-actions">
+                        <button class="btn btn-sm btn-primary" onclick="exportCurrentView()"><i class="fas fa-file-excel"></i> تصدير</button>
+                        <button class="btn btn-sm btn-outline" onclick="resetDashboardFilters()"><i class="fas fa-sync-alt"></i> إعادة تعيين</button>
+                        <button class="btn btn-sm btn-danger" onclick="handleDeleteFilteredData()"><i class="fas fa-trash"></i> حذف المحدد</button>
+                    </div>
+                </div>
+                <input type="text" id="dashboard-search" class="search-box" placeholder="بحث بـ CRN أو اسم المحافظة أو المدينة..." oninput="debounceDashboardSearch()">
+                <div class="filter-controls">
+                    <div class="filter-group"><label class="filter-label">المحافظة</label><select id="dashboard-governorate" class="filter-select" onchange="updateDashboardCityFilter()"><option value="">جميع المحافظات</option></select></div>
+                    <div class="filter-group"><label class="filter-label">المدينة</label><select id="dashboard-city" class="filter-select" onchange="updateDashboardSectorFilter()"><option value="">جميع المدن</option></select></div>
+                    <div class="filter-group"><label class="filter-label">القطاع</label><select id="dashboard-sector" class="filter-select" onchange="updateDashboardBlockFilter()"><option value="">جميع القطاعات</option></select></div>
+                    <div class="filter-group"><label class="filter-label">البلوك</label><select id="dashboard-block" class="filter-select" onchange="renderDashboard()"><option value="">جميع البلوكات</option></select></div>
+                    <div class="filter-group"><label class="filter-label">الحالة</label><select id="dashboard-status-filter" class="filter-select" onchange="renderDashboard()"><option value="">جميع الحالات</option><option value="needs-office-action">تحتاج إجراء مكتبي</option><option value="needs-field-visit">تحتاج زيارة ميدانية</option><option value="field-confirmed">تم تأكيد الموقع</option><option value="map-confirmed">مكتمل</option></select></div>
+                    <div class="filter-group"><label class="filter-label">نتائج لكل صفحة</label><select id="dashboard-page-size" class="filter-select" onchange="changeDashboardPageSize()"><option value="50">50</option><option value="100" selected>100</option><option value="200">200</option><option value="all">الكل</option></select></div>
+                </div>
+            </div>
+            
+            <div class="results-info">
+                <div class="results-count" id="dashboard-results-count">عدد النتائج: 0</div>
+                <div class="pagination-controls">
+                    <button class="pagination-btn" id="dashboard-prev-btn" onclick="previousDashboardPage()" disabled><i class="fas fa-chevron-right"></i></button>
+                    <span id="dashboard-page-info">صفحة 1 من 1</span>
+                    <button class="pagination-btn" id="dashboard-next-btn" onclick="nextDashboardPage()" disabled><i class="fas fa-chevron-left"></i></button>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="table-container"><table id="buildings-table"><thead><tr><th>CRN</th><th>المحافظة</th><th>المدينة</th><th>القطاع</th><th>البلوك</th><th>الحالة</th></tr></thead><tbody></tbody></table><div id="dashboard-no-data" style="display:none; text-align:center; padding: 40px; color: var(--muted-text);"><i class="fas fa-table fa-3x" style="margin-bottom: 15px;"></i><h3>لا توجد بيانات للعرض</h3><p>جرب تغيير معايير التصفية أو قم باستيراد ملف بيانات جديد.</p></div></div>
             </div>
         </div>
+        <div class="footer" style="text-align: center; margin-top: 40px; color: var(--muted-text); font-size: 14px;">Gas CRN Tracker &copy; 2024 - Live Edition (TS)</div>
     </div>
 
+    <div id="manager-modal" class="modal-overlay"><div class="modal-content"><h3>دخول المدير</h3><p style="color: var(--muted-text); margin-bottom: 20px;">الرجاء إدخال كلمة المرور للوصول إلى لوحة التحكم.</p><input type="password" id="manager-password" class="modal-input" placeholder="كلمة المرور"><div class="modal-actions"><button class="btn btn-primary" onclick="checkManagerPassword()">دخول</button><button class="btn btn-outline" onclick="closeManagerPrompt()">إلغاء</button></div></div></div>
+
     <script>
+        // --- TypeScript Code starts here ---
+        // Since we are in an HTML file without a build step, we 'declare' global variables
+        // from the imported scripts (Firebase, SheetJS) to make TypeScript aware of them.
+        // We use `any` for simplicity in this environment.
+        var firebase;
+        var XLSX;
+        /**
+         * @interface Building
+         * Defines the data structure for a single building record.
+         * Using an interface provides type safety and autocompletion in code editors.
+         */
+        // Note: In a real .ts file, you'd use `interface Building { ... }`
+        // But for browser compatibility in a single script tag, we'll work with this structure in mind.
         const firebaseConfig = {
             apiKey: "AIzaSyCSF5d-WMW-aeLftxcHzbky84FwUMa_8rY",
             authDomain: "gas-connections.firebaseapp.com",
@@ -124,193 +247,508 @@
             appId: "1:406162505475:web:77f31cb380ed065cb63336",
             measurementId: "G-M67G0QQN3W"
         };
-        
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
         const dbRef = database.ref('/buildings');
-
+        // --- Global State with Type Definitions ---
         let buildingsData = [];
+        let filteredData = [];
+        let dashboardFilteredData = [];
         let currentUserType = "";
-        let currentlyDisplayedData = [];
-        let governorates, cities, sectors, blocks;
-        
+        let currentPage = 1, pageSize = 50, totalPages = 1;
+        let dashboardCurrentPage = 1, dashboardPageSize = 100, dashboardTotalPages = 1;
+        let searchTimeout;
+        let dashboardSearchTimeout;
+        // Filter data structures
+        let governorates = [];
+        let cities = {};
+        let sectors = {};
+        let blocks = {};
+        // --- Firebase Data Listener ---
         dbRef.on('value', (snapshot) => {
             const data = snapshot.val();
-            // Firebase returns an object with numeric keys, convert to a proper array
-            buildingsData = data ? Object.keys(data).map(key => ({...data[key], db_key: key })) : [];
-            document.getElementById('loading-overlay').style.display = 'none';
+            // Transform the Firebase object into a typed array
+            buildingsData = data ? Object.keys(data).map(key => (Object.assign(Object.assign({}, data[key]), { db_key: key }))) : [];
+            const loadingOverlay = document.getElementById('loading-overlay');
+            if (loadingOverlay)
+                loadingOverlay.style.display = 'none';
             initFilterData();
             refreshAllViews();
+            updateHomepageTaskCounts();
+            updateDashboardStats();
         }, (error) => {
-            console.error(error);
-            alert("فشل الاتصال بقاعدة البيانات. تأكد من صحة إعدادات Firebase.");
-            document.getElementById('loading-overlay').style.display = 'none';
+            console.error("Firebase Read Error:", error);
+            alert("فشل الاتصال بقاعدة البيانات.");
+            const loadingOverlay = document.getElementById('loading-overlay');
+            if (loadingOverlay)
+                loadingOverlay.style.display = 'none';
         });
-
         function refreshAllViews() {
             const activePageElement = document.querySelector('.page.active');
-            if (!activePageElement) return;
-            const activePageId = activePageElement.id;
-            if (activePageId === 'main-page') renderCRNList();
-            else if (activePageId === 'dashboard-page') renderDashboard();
+            if (!activePageElement)
+                return;
+            if (activePageElement.id === 'main-page')
+                renderCRNList();
+            else if (activePageElement.id === 'dashboard-page')
+                renderDashboard();
         }
-        
         function initFilterData() {
             governorates = [...new Set(buildingsData.map(b => b.governorate))].filter(Boolean);
-            cities = {}; sectors = {}; blocks = {};
+            cities = {};
+            sectors = {};
+            blocks = {};
             governorates.forEach(gov => {
                 cities[gov] = [...new Set(buildingsData.filter(b => b.governorate === gov).map(b => b.city))].filter(Boolean);
                 cities[gov].forEach(city => {
                     const key = `${gov}-${city}`;
                     sectors[key] = [...new Set(buildingsData.filter(b => b.governorate === gov && b.city === city).map(b => b.sector))].filter(Boolean);
-                    sectors[key].forEach(sector => { blocks[`${key}-${sector}`] = [...new Set(buildingsData.filter(b => b.governorate === gov && b.city === city && b.sector === sector).map(b => b.block))].filter(Boolean); });
+                    sectors[key].forEach(sector => {
+                        blocks[`${key}-${sector}`] = [...new Set(buildingsData.filter(b => b.governorate === gov && b.city === city && b.sector === sector).map(b => b.block))].filter(Boolean);
+                    });
                 });
             });
             populateSelect('governorate-filter', governorates);
             populateSelect('dashboard-governorate', governorates);
         }
-
         function populateSelect(selectId, options) {
             const select = document.getElementById(selectId);
-            const firstOptionText = select.querySelector('option[value=""]').textContent;
+            const firstOption = select.querySelector('option[value=""]');
+            const firstOptionText = firstOption ? firstOption.textContent : "الكل";
             select.innerHTML = `<option value="">${firstOptionText}</option>`;
-            options.forEach(opt => select.appendChild(new Option(opt, opt)));
+            options.sort().forEach(opt => select.appendChild(new Option(opt, opt)));
         }
-        
-        function updateCityFilter() { populateSelect('city-filter', document.getElementById('governorate-filter').value ? cities[document.getElementById('governorate-filter').value] : []); updateSectorFilter(); }
-        function updateDashboardCityFilter() { populateSelect('dashboard-city', document.getElementById('dashboard-governorate').value ? cities[document.getElementById('dashboard-governorate').value] : []); updateDashboardSectorFilter(); }
-        function updateSectorFilter() { const gov = document.getElementById('governorate-filter').value, city = document.getElementById('city-filter').value; populateSelect('sector-filter', (gov && city && sectors[`${gov}-${city}`]) ? sectors[`${gov}-${city}`] : []); updateBlockFilter(); }
-        function updateDashboardSectorFilter() { const gov = document.getElementById('dashboard-governorate').value, city = document.getElementById('dashboard-city').value; populateSelect('dashboard-sector', (gov && city && sectors[`${gov}-${city}`]) ? sectors[`${gov}-${city}`] : []); updateDashboardBlockFilter(); }
-        function updateBlockFilter() { const gov = document.getElementById('governorate-filter').value, city = document.getElementById('city-filter').value, sec = document.getElementById('sector-filter').value; populateSelect('block-filter', (gov && city && sec && blocks[`${gov}-${city}-${sec}`]) ? blocks[`${gov}-${city}-${sec}`] : []); renderCRNList(); }
-        function updateDashboardBlockFilter() { const gov = document.getElementById('dashboard-governorate').value, city = document.getElementById('dashboard-city').value, sec = document.getElementById('dashboard-sector').value; populateSelect('dashboard-block', (gov && city && sec && blocks[`${gov}-${city}-${sec}`]) ? blocks[`${gov}-${city}-${sec}`] : []); renderDashboard(); }
-        
-        function resetDashboardFilters() { document.getElementById('dashboard-governorate').value = ""; document.getElementById('dashboard-status-filter').value = ""; updateDashboardCityFilter(); }
-        
+        function updateCityFilter() {
+            const govFilter = document.getElementById('governorate-filter');
+            populateSelect('city-filter', govFilter.value ? cities[govFilter.value] || [] : []);
+            updateSectorFilter();
+        }
+        function updateDashboardCityFilter() {
+            const govFilter = document.getElementById('dashboard-governorate');
+            populateSelect('dashboard-city', govFilter.value ? cities[govFilter.value] || [] : []);
+            updateDashboardSectorFilter();
+        }
+        function updateSectorFilter() {
+            const gov = document.getElementById('governorate-filter').value;
+            const city = document.getElementById('city-filter').value;
+            populateSelect('sector-filter', (gov && city && sectors[`${gov}-${city}`]) ? sectors[`${gov}-${city}`] : []);
+            updateBlockFilter();
+        }
+        function updateDashboardSectorFilter() {
+            const gov = document.getElementById('dashboard-governorate').value;
+            const city = document.getElementById('dashboard-city').value;
+            populateSelect('dashboard-sector', (gov && city && sectors[`${gov}-${city}`]) ? sectors[`${gov}-${city}`] : []);
+            updateDashboardBlockFilter();
+        }
+        function updateBlockFilter() {
+            const gov = document.getElementById('governorate-filter').value;
+            const city = document.getElementById('city-filter').value;
+            const sec = document.getElementById('sector-filter').value;
+            populateSelect('block-filter', (gov && city && sec && blocks[`${gov}-${city}-${sec}`]) ? blocks[`${gov}-${city}-${sec}`] : []);
+            renderCRNList();
+        }
+        function updateDashboardBlockFilter() {
+            const gov = document.getElementById('dashboard-governorate').value;
+            const city = document.getElementById('dashboard-city').value;
+            const sec = document.getElementById('dashboard-sector').value;
+            populateSelect('dashboard-block', (gov && city && sec && blocks[`${gov}-${city}-${sec}`]) ? blocks[`${gov}-${city}-${sec}`] : []);
+            renderDashboard();
+        }
+        function resetDashboardFilters() {
+            document.getElementById('dashboard-search').value = "";
+            document.getElementById('dashboard-governorate').value = "";
+            updateDashboardCityFilter();
+            document.getElementById('dashboard-status-filter').value = "";
+            dashboardCurrentPage = 1;
+            renderDashboard();
+        }
+        function debounceSearch() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                currentPage = 1;
+                renderCRNList();
+            }, 300);
+        }
+        function debounceDashboardSearch() {
+            clearTimeout(dashboardSearchTimeout);
+            dashboardSearchTimeout = setTimeout(() => {
+                dashboardCurrentPage = 1;
+                renderDashboard();
+            }, 300);
+        }
         function showPage(pageId, userType = "") {
             document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
-            document.getElementById(pageId).classList.add('active');
+            const pageElement = document.getElementById(pageId);
+            if (pageElement)
+                pageElement.classList.add('active');
+            currentUserType = userType;
             if (pageId === 'main-page') {
-                currentUserType = userType;
-                document.getElementById('user-type-label').innerHTML = userType === 'office' ? '<i class="fas fa-building"></i> مهام المكتب' : '<i class="fas fa-hard-hat"></i> مهام الموقع';
-                document.getElementById('status-filter-group').style.display = (userType === 'office') ? 'flex' : 'none';
+                const userTypeLabel = document.getElementById('user-type-label');
+                if (userTypeLabel)
+                    userTypeLabel.textContent = userType === 'office' ? 'المطلوب من المكتب' : 'المطلوب من الموقع';
+                currentPage = 1;
                 renderCRNList();
-            } else if (pageId === 'dashboard-page') { currentUserType = 'manager'; renderDashboard(); }
-        }
-        
-        function renderCRNList() {
-            const crnList = document.getElementById('crn-list'); crnList.innerHTML = "";
-            const gov = document.getElementById('governorate-filter').value, city = document.getElementById('city-filter').value, sec = document.getElementById('sector-filter').value, blk = document.getElementById('block-filter').value, stat = document.getElementById('status-filter').value;
-            let filtered = buildingsData.filter(b => {
-                if (currentUserType === 'office') { if (!['unknown', 'field-confirmed'].includes(b.status) || (stat && b.status !== stat)) return false; } 
-                else if (currentUserType === 'field' && b.status !== 'needs-site-confirmation') return false;
-                if (gov && b.governorate !== gov) return false; if (city && b.city !== city) return false;
-                if (sec && b.sector != sec) return false; if (blk && b.block != blk) return false;
-                return true;
-            });
-            currentlyDisplayedData = filtered;
-            const resultsWrapper = document.getElementById('results-count-wrapper');
-            if (resultsWrapper) resultsWrapper.innerHTML = `<div class="results-count" style="display:${filtered.length > 0 ? 'block':'none'}"><i class="fas fa-list"></i> عدد النتائج: <span>${filtered.length}</span></div>`;
-            if (filtered.length === 0) { crnList.innerHTML = `<div class="card" style="text-align: center; color: var(--muted-text);"><i class="fas fa-inbox fa-3x" style="margin-bottom: 15px;"></i><h3>لا توجد مهام حالياً</h3><p>لا توجد بيانات تطابق معايير التصفية الحالية.</p></div>`; return; }
-            filtered.forEach(b => {
-                const item = document.createElement('div'); item.className = 'crn-item';
-                let statusText = getStatusText(b.status), statusClass = {'unknown': 'status-unknown', 'needs-site-confirmation': 'status-site', 'field-confirmed': 'status-field', 'map-confirmed': 'status-map'}[b.status], actionsHtml = '';
-                if (currentUserType === 'office') {
-                    if (b.status === 'unknown') actionsHtml = `<button class="action-btn btn btn-primary" onclick="updateStatus('${b.db_key}', 'map-confirmed')"><i class="fas fa-map-marked"></i> تم على الخريطة</button><button class="action-btn btn btn-secondary" onclick="updateStatus('${b.db_key}', 'needs-site-confirmation')"><i class="fas fa-map-marked-alt"></i> يحتاج تأكيد ميداني</button>`;
-                    else if (b.status === 'field-confirmed') actionsHtml = `<button class="action-btn btn btn-primary" onclick="updateStatus('${b.db_key}', 'map-confirmed')"><i class="fas fa-map-marked"></i> تم على الخريطة</button>`;
-                } else if (currentUserType === 'field') { actionsHtml = `<button class="action-btn btn btn-primary" onclick="updateStatus('${b.db_key}', 'field-confirmed')"><i class="fas fa-check-circle"></i> تأكيد ميداني</button>`; }
-                item.innerHTML = `<div class="crn-header"><div class="crn-id">${b.crn}</div><div class="status-badge ${statusClass}">${statusText}</div></div><div class="crn-details"><div class="detail-item"><div class="detail-label">المحافظة</div><div>${b.governorate}</div></div><div class="detail-item"><div class="detail-label">المدينة</div><div>${b.city}</div></div><div class="detail-item"><div class="detail-label">القطاع</div><div>${b.sector}</div></div><div class="detail-item"><div class="detail-label">البلوك</div><div>${b.block}</div></div></div>${actionsHtml ? `<div class="actions">${actionsHtml}</div>` : ''}`;
-                crnList.appendChild(item);
-            });
-        }
-        
-        function updateStatus(db_key, newStatus) { database.ref('/buildings/' + db_key + '/status').set(newStatus).catch(error => alert(`فشل التحديث: ${error.message}`)); }
-        function getStatusText(status) { return {'unknown': "غير معروف", 'needs-site-confirmation': "يحتاج تأكيد ميداني", 'field-confirmed': "تم التأكيد الميداني", 'map-confirmed': "تم على الخريطة"}[status] || status; }
-        
-        function renderDashboard() {
-            const gov = document.getElementById('dashboard-governorate').value, city = document.getElementById('dashboard-city').value, sec = document.getElementById('dashboard-sector').value, blk = document.getElementById('dashboard-block').value, stat = document.getElementById('dashboard-status-filter').value;
-            const filtered = buildingsData.filter(b => (!gov || b.governorate === gov) && (!city || b.city === city) && (!sec || b.sector != sec) && (!blk || b.block != blk) && (!stat || b.status === stat));
-            currentlyDisplayedData = filtered;
-            const tableBody = document.querySelector('#buildings-table tbody'), noDataEl = document.getElementById('dashboard-no-data');
-            tableBody.innerHTML = "";
-            noDataEl.style.display = filtered.length === 0 ? 'block' : 'none';
-            if (filtered.length > 0) { filtered.forEach(b => { const row = tableBody.insertRow(); if (b.status === 'map-confirmed') row.classList.add('completed-row'); row.innerHTML = `<td>${b.crn}</td><td>${b.governorate}</td><td>${b.city}</td><td>${b.sector}</td><td>${b.block}</td><td>${getStatusText(b.status)}</td>`; }); }
-        }
-        
-        // **UPDATED**: Function for "Add & Update" logic
-        function handleFileUpload(event) {
-            const file = event.target.files[0]; if (!file) return;
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                try {
-                    const data = new Uint8Array(e.target.result), workbook = XLSX.read(data, {type: 'array'}), sheetName = workbook.SheetNames[0], worksheet = workbook.Sheets[sheetName], json = XLSX.utils.sheet_to_json(worksheet);
-                    if (json.length === 0) { alert("الملف فارغ."); return; }
-                    
-                    const updates = {};
-                    let newCount = 0;
-                    let updatedCount = 0;
-                    const existingCRNs = new Map(buildingsData.map(b => [String(b.crn), b]));
-
-                    json.forEach(row => {
-                        const crn = String(row['CRN'] || row.crn);
-                        if (!crn) return;
-
-                        const buildingData = {
-                            crn: crn,
-                            governorate: row['المحافظة'] || row.governorate,
-                            city: row['المدينة'] || row.city,
-                            sector: row['القطاع'] || row.sector,
-                            block: row['البلوك'] || row.block,
-                        };
-
-                        const existingBuilding = existingCRNs.get(crn);
-                        if (existingBuilding) {
-                            // It exists, update it but preserve status
-                            updates[existingBuilding.db_key] = { ...existingBuilding, ...buildingData }; // Merges new data, keeps old status and db_key
-                            updatedCount++;
-                        } else {
-                            // It's new, add it with 'unknown' status
-                            const newKey = dbRef.push().key;
-                            updates[newKey] = { ...buildingData, status: 'unknown' };
-                            newCount++;
-                        }
-                    });
-
-                    if (newCount === 0 && updatedCount === 0) { alert("لم يتم العثور على بيانات صالحة في الملف."); return; }
-                    
-                    if (confirm(`سيتم إضافة ${newCount} سجل جديد وتحديث ${updatedCount} سجل حالي. هل تريد المتابعة؟`)) {
-                        dbRef.update(updates).catch(error => alert(`فشل الاستيراد: ${error.message}`));
-                    }
-                } catch (error) { console.error(error); alert("حدث خطأ أثناء قراءة الملف."); } finally { event.target.value = ''; }
-            };
-            reader.readAsArrayBuffer(file);
-        }
-
-        function handleDeleteFilteredData() {
-            if (currentlyDisplayedData.length === 0) { alert("لا توجد بيانات محددة للحذف. استخدم الفلاتر لتحديد البيانات أولاً."); return; }
-            const count = currentlyDisplayedData.length;
-            if (confirm(`تحذير: أنت على وشك حذف ${count} سجل بشكل نهائي. هل أنت متأكد؟`)) {
-                const updates = {};
-                currentlyDisplayedData.forEach(b => { updates[b.db_key] = null; });
-                dbRef.update(updates).catch(error => alert(`فشل الحذف: ${error.message}`));
+            }
+            else if (pageId === 'dashboard-page') {
+                dashboardCurrentPage = 1;
+                renderDashboard();
             }
         }
-
+        function applyFilters() {
+            const govFilter = document.getElementById('governorate-filter').value;
+            const cityFilter = document.getElementById('city-filter').value;
+            const sectorFilter = document.getElementById('sector-filter').value;
+            const blockFilter = document.getElementById('block-filter').value;
+            const searchTerm = document.getElementById('search-box').value.toLowerCase();
+            let data = buildingsData;
+            if (govFilter)
+                data = data.filter(b => b.governorate === govFilter);
+            if (cityFilter)
+                data = data.filter(b => b.city === cityFilter);
+            if (sectorFilter)
+                data = data.filter(b => b.sector === sectorFilter);
+            if (blockFilter)
+                data = data.filter(b => b.block === blockFilter);
+            if (searchTerm) {
+                data = data.filter(b => (b.crn && b.crn.toString().toLowerCase().includes(searchTerm)) ||
+                    (b.governorate && b.governorate.toLowerCase().includes(searchTerm)) ||
+                    (b.city && b.city.toLowerCase().includes(searchTerm)));
+            }
+            if (currentUserType === 'office') {
+                data = data.filter(b => !b.map_confirmed && (!b.needs_field_visit || b.site_confirmed));
+            }
+            else if (currentUserType === 'field') {
+                data = data.filter(b => b.needs_field_visit && !b.site_confirmed);
+            }
+            return data;
+        }
+        function renderCRNList() {
+            filteredData = applyFilters();
+            const pageSizeSelector = document.getElementById('page-size');
+            pageSize = pageSizeSelector.value === 'all' ? filteredData.length : parseInt(pageSizeSelector.value, 10) || 50;
+            totalPages = Math.ceil(filteredData.length / pageSize) || 1;
+            if (currentPage > totalPages)
+                currentPage = totalPages;
+            const pageData = filteredData.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+            const resultsCountEl = document.getElementById('results-count');
+            if (resultsCountEl)
+                resultsCountEl.textContent = `النتائج: ${filteredData.length}`;
+            updatePaginationControls('main');
+            const listElement = document.getElementById('crn-list');
+            if (!listElement)
+                return;
+            listElement.innerHTML = '';
+            if (pageData.length === 0) {
+                listElement.innerHTML = `<div class="card" style="text-align:center; color: var(--muted-text);">لا توجد مهام حالياً.</div>`;
+                return;
+            }
+            const fragment = document.createDocumentFragment();
+            pageData.forEach(building => {
+                const item = document.createElement('div');
+                item.className = 'crn-item';
+                item.innerHTML = generateCRNItemHTML(building);
+                fragment.appendChild(item);
+            });
+            listElement.appendChild(fragment);
+        }
+        function generateCRNItemHTML(b) {
+            let statusBadge = '';
+            if (b.map_confirmed) {
+                statusBadge = '<span class="status-badge status-map"><i class="fas fa-check-circle"></i> مكتمل</span>';
+            }
+            else if (b.site_confirmed) {
+                statusBadge = '<span class="status-badge status-site"><i class="fas fa-user-check"></i> تم تأكيد الموقع</span>';
+            }
+            else if (b.needs_field_visit) {
+                statusBadge = '<span class="status-badge status-field"><i class="fas fa-shipping-fast"></i> مرسل للموقع</span>';
+            }
+            else {
+                statusBadge = '<span class="status-badge status-unknown"><i class="fas fa-hourglass-start"></i> بانتظار المكتب</span>';
+            }
+            let actionsHTML = '';
+            if (currentUserType === 'office') {
+                if (b.site_confirmed) {
+                    actionsHTML = `<button class="btn btn-primary action-btn" onclick="confirmOnMap('${b.db_key}')"><i class="fas fa-map-marked-alt"></i> تأكيد نهائي على الخريطة</button>`;
+                }
+                else {
+                    actionsHTML = `<button class="btn btn-primary action-btn" onclick="confirmOnMap('${b.db_key}')"><i class="fas fa-map-marked-alt"></i> تأكيد على الخريطة</button><button class="btn btn-secondary action-btn" onclick="sendToField('${b.db_key}')"><i class="fas fa-route"></i> إرسال للموقع</button>`;
+                }
+            }
+            else if (currentUserType === 'field' && b.needs_field_visit && !b.site_confirmed) {
+                actionsHTML = `<button class="btn btn-primary action-btn" onclick="confirmSiteVisit('${b.db_key}')"><i class="fas fa-check"></i> تأكيد الزيارة الميدانية</button>`;
+            }
+            return `<div class="crn-header"><span class="crn-id">${b.crn}</span>${statusBadge}</div><div class="crn-details"><div class="detail-item"><div class="detail-label"><i class="fas fa-globe-africa"></i> المحافظة</div><div>${b.governorate || 'N/A'}</div></div><div class="detail-item"><div class="detail-label"><i class="fas fa-city"></i> المدينة</div><div>${b.city || 'N/A'}</div></div><div class="detail-item"><div class="detail-label"><i class="fas fa-th-large"></i> القطاع</div><div>${b.sector || 'N/A'}</div></div><div class="detail-item"><div class="detail-label"><i class="fas fa-landmark"></i> البلوك</div><div>${b.block || 'N/A'}</div></div></div>${actionsHTML ? `<div class="actions">${actionsHTML}</div>` : ''}`;
+        }
+        function applyDashboardFilters() {
+            const govFilter = document.getElementById('dashboard-governorate').value;
+            const cityFilter = document.getElementById('dashboard-city').value;
+            const sectorFilter = document.getElementById('dashboard-sector').value;
+            const blockFilter = document.getElementById('dashboard-block').value;
+            const statusFilter = document.getElementById('dashboard-status-filter').value;
+            const searchTerm = document.getElementById('dashboard-search').value.toLowerCase();
+            let data = buildingsData;
+            if (govFilter)
+                data = data.filter(b => b.governorate === govFilter);
+            if (cityFilter)
+                data = data.filter(b => b.city === cityFilter);
+            if (sectorFilter)
+                data = data.filter(b => b.sector === sectorFilter);
+            if (blockFilter)
+                data = data.filter(b => b.block === blockFilter);
+            if (statusFilter) {
+                if (statusFilter === 'needs-office-action')
+                    data = data.filter(b => !b.map_confirmed && !b.needs_field_visit && !b.site_confirmed);
+                else if (statusFilter === 'needs-field-visit')
+                    data = data.filter(b => b.needs_field_visit && !b.site_confirmed);
+                else if (statusFilter === 'field-confirmed')
+                    data = data.filter(b => b.site_confirmed && !b.map_confirmed);
+                else if (statusFilter === 'map-confirmed')
+                    data = data.filter(b => b.map_confirmed);
+            }
+            if (searchTerm) {
+                data = data.filter(b => (b.crn && b.crn.toString().toLowerCase().includes(searchTerm)) ||
+                    (b.governorate && b.governorate.toLowerCase().includes(searchTerm)) ||
+                    (b.city && b.city.toLowerCase().includes(searchTerm)));
+            }
+            return data;
+        }
+        function renderDashboard() {
+            updateDashboardStats();
+            dashboardFilteredData = applyDashboardFilters();
+            const pageSizeSelector = document.getElementById('dashboard-page-size');
+            dashboardPageSize = pageSizeSelector.value === 'all' ? dashboardFilteredData.length : parseInt(pageSizeSelector.value, 10) || 100;
+            dashboardTotalPages = Math.ceil(dashboardFilteredData.length / dashboardPageSize) || 1;
+            if (dashboardCurrentPage > dashboardTotalPages)
+                dashboardCurrentPage = dashboardTotalPages;
+            const pageData = dashboardFilteredData.slice((dashboardCurrentPage - 1) * dashboardPageSize, dashboardCurrentPage * dashboardPageSize);
+            const resultsCountEl = document.getElementById('dashboard-results-count');
+            if (resultsCountEl)
+                resultsCountEl.textContent = `النتائج: ${dashboardFilteredData.length}`;
+            updatePaginationControls('dashboard');
+            const tableBody = document.querySelector("#buildings-table tbody");
+            const noDataEl = document.getElementById('dashboard-no-data');
+            if (!tableBody || !noDataEl)
+                return;
+            tableBody.innerHTML = '';
+            if (pageData.length === 0) {
+                noDataEl.style.display = 'block';
+                return;
+            }
+            noDataEl.style.display = 'none';
+            const fragment = document.createDocumentFragment();
+            pageData.forEach(b => {
+                const row = document.createElement('tr');
+                let statusText = 'تحتاج إجراء مكتبي';
+                if (b.map_confirmed) {
+                    statusText = 'مكتمل';
+                    row.classList.add('completed-row');
+                }
+                else if (b.site_confirmed) {
+                    statusText = 'تم تأكيد الموقع';
+                }
+                else if (b.needs_field_visit) {
+                    statusText = 'تحتاج زيارة ميدانية';
+                }
+                row.innerHTML = `<td>${b.crn}</td><td>${b.governorate || ''}</td><td>${b.city || ''}</td><td>${b.sector || ''}</td><td>${b.block || ''}</td><td>${statusText}</td>`;
+                fragment.appendChild(row);
+            });
+            tableBody.appendChild(fragment);
+        }
+        function updatePaginationControls(view) {
+            const prefix = view === 'main' ? '' : 'dashboard-';
+            const pageInfo = document.getElementById(`${prefix}page-info`);
+            const prevBtn = document.getElementById(`${prefix}prev-btn`);
+            const nextBtn = document.getElementById(`${prefix}next-btn`);
+            const current = view === 'main' ? currentPage : dashboardCurrentPage;
+            const total = view === 'main' ? totalPages : dashboardTotalPages;
+            if (pageInfo)
+                pageInfo.textContent = `صفحة ${current || 1} من ${total || 1}`;
+            if (prevBtn)
+                prevBtn.disabled = current <= 1;
+            if (nextBtn)
+                nextBtn.disabled = current >= total;
+        }
+        function nextPage() { if (currentPage < totalPages) {
+            currentPage++;
+            renderCRNList();
+        } }
+        function previousPage() { if (currentPage > 1) {
+            currentPage--;
+            renderCRNList();
+        } }
+        function changePageSize() { currentPage = 1; renderCRNList(); }
+        function nextDashboardPage() { if (dashboardCurrentPage < dashboardTotalPages) {
+            dashboardCurrentPage++;
+            renderDashboard();
+        } }
+        function previousDashboardPage() { if (dashboardCurrentPage > 1) {
+            dashboardCurrentPage--;
+            renderDashboard();
+        } }
+        function changeDashboardPageSize() { dashboardCurrentPage = 1; renderDashboard(); }
+        function confirmOnMap(db_key) { database.ref('/buildings/' + db_key).update({ map_confirmed: true, map_timestamp: new Date().toISOString() }); }
+        function sendToField(db_key) { database.ref('/buildings/' + db_key).update({ needs_field_visit: true }); }
+        function confirmSiteVisit(db_key) { database.ref('/buildings/' + db_key).update({ site_confirmed: true, site_timestamp: new Date().toISOString() }); }
+        function updateHomepageTaskCounts() {
+            const officeTasks = buildingsData.filter(b => !b.map_confirmed && (!b.needs_field_visit || b.site_confirmed)).length;
+            const officeTaskCountEl = document.getElementById('office-task-count');
+            if (officeTaskCountEl)
+                officeTaskCountEl.textContent = officeTasks.toString();
+            const fieldTasks = buildingsData.filter(b => b.needs_field_visit && !b.site_confirmed).length;
+            const fieldTaskCountEl = document.getElementById('field-task-count');
+            if (fieldTaskCountEl)
+                fieldTaskCountEl.textContent = fieldTasks.toString();
+        }
+        function updateDashboardStats() {
+            const statTotalEl = document.getElementById('stat-total');
+            if (statTotalEl)
+                statTotalEl.textContent = buildingsData.length.toString();
+            const statCompletedEl = document.getElementById('stat-completed');
+            if (statCompletedEl)
+                statCompletedEl.textContent = buildingsData.filter(b => b.map_confirmed).length.toString();
+            const statAtFieldEl = document.getElementById('stat-at-field');
+            if (statAtFieldEl)
+                statAtFieldEl.textContent = buildingsData.filter(b => b.needs_field_visit && !b.site_confirmed).length.toString();
+            const officeQueue = buildingsData.filter(b => !b.map_confirmed && (!b.needs_field_visit || b.site_confirmed)).length;
+            const statAtOfficeEl = document.getElementById('stat-at-office');
+            if (statAtOfficeEl)
+                statAtOfficeEl.textContent = officeQueue.toString();
+        }
+        function handleFileUpload(event) {
+            var _a;
+            const target = event.target;
+            const file = (_a = target.files) === null || _a === void 0 ? void 0 : _a[0];
+            if (!file)
+                return;
+            const loadingOverlay = document.getElementById('loading-overlay');
+            if (loadingOverlay)
+                loadingOverlay.style.display = 'flex';
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                var _a;
+                try {
+                    const arrayBuffer = (_a = e.target) === null || _a === void 0 ? void 0 : _a.result;
+                    if (!arrayBuffer)
+                        throw new Error('فشل قراءة الملف.');
+                    const workbook = XLSX.read(new Uint8Array(arrayBuffer), { type: 'array' });
+                    const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { header: 1 });
+                    if (jsonData.length < 2) {
+                        throw new Error('الملف فارغ أو غير صالح.');
+                    }
+                    const headers = jsonData[0].map(h => h.toString().toLowerCase().trim());
+                    const crnIndex = headers.indexOf('crn');
+                    if (crnIndex === -1) {
+                        throw new Error('الملف يجب أن يحتوي على عمود باسم "crn".');
+                    }
+                    const updates = {};
+                    const allCrns = new Set(buildingsData.map(b => b.crn.toString()));
+                    for (let i = 1; i < jsonData.length; i++) {
+                        const row = jsonData[i];
+                        const crn = row[crnIndex] ? row[crnIndex].toString() : null;
+                        if (!crn || allCrns.has(crn))
+                            continue;
+                        const newRecord = { crn: crn };
+                        headers.forEach((h, idx) => {
+                            if (h !== 'crn' && row[idx] !== undefined) {
+                                newRecord[h] = row[idx];
+                            }
+                        });
+                        const newKey = dbRef.push().key;
+                        if (newKey)
+                            updates[newKey] = newRecord;
+                    }
+                    if (Object.keys(updates).length > 0) {
+                        dbRef.update(updates).then(() => {
+                            alert(`تمت إضافة ${Object.keys(updates).length} سجل جديد بنجاح.`);
+                            if (loadingOverlay)
+                                loadingOverlay.style.display = 'none';
+                        });
+                    }
+                    else {
+                        alert("لم يتم العثور على سجلات جديدة لإضافتها.");
+                        if (loadingOverlay)
+                            loadingOverlay.style.display = 'none';
+                    }
+                }
+                catch (error) {
+                    alert(`خطأ: ${error.message}`);
+                    if (loadingOverlay)
+                        loadingOverlay.style.display = 'none';
+                }
+            };
+            reader.readAsArrayBuffer(file);
+            target.value = ''; // Reset file input
+        }
+        function handleDeleteFilteredData() {
+            if (dashboardFilteredData.length === 0) {
+                alert("يرجى تحديد البيانات المراد حذفها باستخدام الفلاتر أولاً.");
+                return;
+            }
+            if (!confirm(`هل أنت متأكد من حذف ${dashboardFilteredData.length} سجل/سجلات المحددة نهائياً؟`)) {
+                return;
+            }
+            const loadingOverlay = document.getElementById('loading-overlay');
+            if (loadingOverlay)
+                loadingOverlay.style.display = 'flex';
+            const updates = {};
+            dashboardFilteredData.forEach(r => {
+                updates[r.db_key] = null;
+            });
+            dbRef.update(updates).then(() => {
+                alert(`تم حذف ${dashboardFilteredData.length} سجل بنجاح.`);
+                if (loadingOverlay)
+                    loadingOverlay.style.display = 'none';
+            }).catch(e => {
+                alert(`فشل الحذف: ${e.message}`);
+                if (loadingOverlay)
+                    loadingOverlay.style.display = 'none';
+            });
+        }
         function exportCurrentView() {
-            if (currentlyDisplayedData.length === 0) { alert("لا توجد بيانات حالية لتصديرها."); return; }
-            const data = currentlyDisplayedData.map(b => ({ 'CRN': b.crn, 'المحافظة': b.governorate, 'المدينة/القرية': b.city, 'القطاع': b.sector, 'البلوك': b.block, 'الحالة': getStatusText(b.status) }));
-            const ws = XLSX.utils.json_to_sheet(data), wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "البيانات الحالية");
-            XLSX.writeFile(wb, "تقرير_البيانات_الحالية.xlsx");
+            let dataToExport = [];
+            const activePage = document.querySelector('.page.active');
+            if (!activePage)
+                return;
+            if (activePage.id === 'main-page') {
+                dataToExport = filteredData;
+            }
+            else if (activePage.id === 'dashboard-page') {
+                dataToExport = dashboardFilteredData;
+            }
+            if (dataToExport.length === 0) {
+                alert("لا توجد بيانات لتصديرها.");
+                return;
+            }
+            const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Data");
+            XLSX.writeFile(workbook, "GasCRN_Export.xlsx");
         }
-
-        function promptForManagerPassword() { document.getElementById('manager-modal').style.display = 'flex'; document.getElementById('manager-password').focus(); }
-        function closeManagerPrompt() { document.getElementById('manager-modal').style.display = 'none'; document.getElementById('manager-password').value = ''; }
+        function promptForManagerPassword() {
+            const modal = document.getElementById('manager-modal');
+            const passwordInput = document.getElementById('manager-password');
+            if (modal)
+                modal.style.display = 'flex';
+            if (passwordInput)
+                passwordInput.focus();
+        }
+        function closeManagerPrompt() {
+            const modal = document.getElementById('manager-modal');
+            const passwordInput = document.getElementById('manager-password');
+            if (modal)
+                modal.style.display = 'none';
+            if (passwordInput)
+                passwordInput.value = '';
+        }
         function checkManagerPassword() {
-            const managerPassword = "admin2024"; 
-            if (document.getElementById('manager-password').value === managerPassword) { closeManagerPrompt(); showPage('dashboard-page'); } 
-            else { alert("كلمة المرور غير صحيحة."); }
+            const passwordInput = document.getElementById('manager-password');
+            if ((passwordInput === null || passwordInput === void 0 ? void 0 : passwordInput.value) === "Admin@123") {
+                closeManagerPrompt();
+                showPage('dashboard-page');
+            }
+            else {
+                alert("كلمة مرور غير صحيحة!");
+            }
         }
-        
     </script>
 </body>
 </html>
