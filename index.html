@@ -47,6 +47,7 @@
         .status-site { background-color: #ede7f6; border-color: #d1c4e9; color: #4527a0;}
         .status-field { background-color: #e3f2fd; border-color: #90caf9; color: #0d47a1; }
         .status-map { background-color: #e8f5e9; border-color: #a5d6a7; color: #1b5e20; }
+        .status-danger { background-color: #ffebee; border-color: #ef9a9a; color: #c62828; }
         .crn-details { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; padding-top: 15px; border-top: 1px solid var(--border-color); }
         .detail-item .detail-label { font-size: 13px; color: var(--muted-text); margin-bottom: 4px; display: flex; align-items: center; gap: 6px; }
         .actions { display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap; justify-content: flex-end; }
@@ -200,7 +201,16 @@
                     <div class="filter-group"><label class="filter-label">المدينة</label><select id="dashboard-city" class="filter-select" onchange="updateDashboardSectorFilter()"><option value="">جميع المدن</option></select></div>
                     <div class="filter-group"><label class="filter-label">القطاع</label><select id="dashboard-sector" class="filter-select" onchange="updateDashboardBlockFilter()"><option value="">جميع القطاعات</option></select></div>
                     <div class="filter-group"><label class="filter-label">البلوك</label><select id="dashboard-block" class="filter-select" onchange="renderDashboard()"><option value="">جميع البلوكات</option></select></div>
-                    <div class="filter-group"><label class="filter-label">الحالة</label><select id="dashboard-status-filter" class="filter-select" onchange="renderDashboard()"><option value="">جميع الحالات</option><option value="needs-office-action">تحتاج إجراء مكتبي</option><option value="needs-field-visit">تحتاج زيارة ميدانية</option><option value="field-confirmed">تم تأكيد الموقع</option><option value="map-confirmed">مكتمل</option></select></div>
+                    <div class="filter-group"><label class="filter-label">الحالة</label>
+                        <select id="dashboard-status-filter" class="filter-select" onchange="renderDashboard()">
+                            <option value="">جميع الحالات</option>
+                            <option value="needs-office-action">تحتاج إجراء مكتبي</option>
+                            <option value="needs-field-visit">تحتاج زيارة ميدانية</option>
+                            <option value="field-confirmed">تم تأكيد الموقع</option>
+                            <option value="map-confirmed">مكتمل</option>
+                            <option value="site-issue-reported">تم الإبلاغ عن مشكلة</option>
+                        </select>
+                    </div>
                     <div class="filter-group"><label class="filter-label">نتائج لكل صفحة</label><select id="dashboard-page-size" class="filter-select" onchange="changeDashboardPageSize()"><option value="50">50</option><option value="100" selected>100</option><option value="200">200</option><option value="all">الكل</option></select></div>
                 </div>
             </div>
@@ -223,20 +233,25 @@
 
     <div id="manager-modal" class="modal-overlay"><div class="modal-content"><h3>دخول المدير</h3><p style="color: var(--muted-text); margin-bottom: 20px;">الرجاء إدخال كلمة المرور للوصول إلى لوحة التحكم.</p><input type="password" id="manager-password" class="modal-input" placeholder="كلمة المرور"><div class="modal-actions"><button class="btn btn-primary" onclick="checkManagerPassword()">دخول</button><button class="btn btn-outline" onclick="closeManagerPrompt()">إلغاء</button></div></div></div>
 
+    <!-- NEW MODAL FOR PROBLEM DETAILS -->
+    <div id="details-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h3>إضافة تفاصيل المشكلة</h3>
+            <p style="color: var(--muted-text); margin-bottom: 20px;">الرجاء وصف المشكلة التي واجهتها في الموقع. هذا سيغلق المهمة بشكل نهائي.</p>
+            <textarea id="problem-details-input" class="modal-input" placeholder="اكتب التفاصيل هنا..." rows="4" style="height: auto;"></textarea>
+            <input type="hidden" id="modal-db-key-input">
+            <div class="modal-actions">
+                <button class="btn btn-danger" onclick="submitProblemDetails()">تأكيد وإغلاق المهمة</button>
+                <button class="btn btn-outline" onclick="closeDetailsModal()">إلغاء</button>
+            </div>
+        </div>
+    </div>
+
+
     <script>
-        // --- TypeScript Code starts here ---
-        // Since we are in an HTML file without a build step, we 'declare' global variables
-        // from the imported scripts (Firebase, SheetJS) to make TypeScript aware of them.
-        // We use `any` for simplicity in this environment.
         var firebase;
         var XLSX;
-        /**
-         * @interface Building
-         * Defines the data structure for a single building record.
-         * Using an interface provides type safety and autocompletion in code editors.
-         */
-        // Note: In a real .ts file, you'd use `interface Building { ... }`
-        // But for browser compatibility in a single script tag, we'll work with this structure in mind.
+        
         const firebaseConfig = {
             apiKey: "AIzaSyCSF5d-WMW-aeLftxcHzbky84FwUMa_8rY",
             authDomain: "gas-connections.firebaseapp.com",
@@ -250,7 +265,7 @@
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
         const dbRef = database.ref('/buildings');
-        // --- Global State with Type Definitions ---
+        
         let buildingsData = [];
         let filteredData = [];
         let dashboardFilteredData = [];
@@ -259,19 +274,15 @@
         let dashboardCurrentPage = 1, dashboardPageSize = 100, dashboardTotalPages = 1;
         let searchTimeout;
         let dashboardSearchTimeout;
-        // Filter data structures
         let governorates = [];
         let cities = {};
         let sectors = {};
         let blocks = {};
-        // --- Firebase Data Listener ---
+        
         dbRef.on('value', (snapshot) => {
             const data = snapshot.val();
-            // Transform the Firebase object into a typed array
-            buildingsData = data ? Object.keys(data).map(key => (Object.assign(Object.assign({}, data[key]), { db_key: key }))) : [];
-            const loadingOverlay = document.getElementById('loading-overlay');
-            if (loadingOverlay)
-                loadingOverlay.style.display = 'none';
+            buildingsData = data ? Object.keys(data).map(key => ({ ...data[key], db_key: key })) : [];
+            document.getElementById('loading-overlay').style.display = 'none';
             initFilterData();
             refreshAllViews();
             updateHomepageTaskCounts();
@@ -279,19 +290,16 @@
         }, (error) => {
             console.error("Firebase Read Error:", error);
             alert("فشل الاتصال بقاعدة البيانات.");
-            const loadingOverlay = document.getElementById('loading-overlay');
-            if (loadingOverlay)
-                loadingOverlay.style.display = 'none';
+            document.getElementById('loading-overlay').style.display = 'none';
         });
+
         function refreshAllViews() {
             const activePageElement = document.querySelector('.page.active');
-            if (!activePageElement)
-                return;
-            if (activePageElement.id === 'main-page')
-                renderCRNList();
-            else if (activePageElement.id === 'dashboard-page')
-                renderDashboard();
+            if (!activePageElement) return;
+            if (activePageElement.id === 'main-page') renderCRNList();
+            else if (activePageElement.id === 'dashboard-page') renderDashboard();
         }
+
         function initFilterData() {
             governorates = [...new Set(buildingsData.map(b => b.governorate))].filter(Boolean);
             cities = {};
@@ -310,6 +318,7 @@
             populateSelect('governorate-filter', governorates);
             populateSelect('dashboard-governorate', governorates);
         }
+
         function populateSelect(selectId, options) {
             const select = document.getElementById(selectId);
             const firstOption = select.querySelector('option[value=""]');
@@ -317,28 +326,33 @@
             select.innerHTML = `<option value="">${firstOptionText}</option>`;
             options.sort().forEach(opt => select.appendChild(new Option(opt, opt)));
         }
+
         function updateCityFilter() {
             const govFilter = document.getElementById('governorate-filter');
             populateSelect('city-filter', govFilter.value ? cities[govFilter.value] || [] : []);
             updateSectorFilter();
         }
+
         function updateDashboardCityFilter() {
             const govFilter = document.getElementById('dashboard-governorate');
             populateSelect('dashboard-city', govFilter.value ? cities[govFilter.value] || [] : []);
             updateDashboardSectorFilter();
         }
+
         function updateSectorFilter() {
             const gov = document.getElementById('governorate-filter').value;
             const city = document.getElementById('city-filter').value;
             populateSelect('sector-filter', (gov && city && sectors[`${gov}-${city}`]) ? sectors[`${gov}-${city}`] : []);
             updateBlockFilter();
         }
+
         function updateDashboardSectorFilter() {
             const gov = document.getElementById('dashboard-governorate').value;
             const city = document.getElementById('dashboard-city').value;
             populateSelect('dashboard-sector', (gov && city && sectors[`${gov}-${city}`]) ? sectors[`${gov}-${city}`] : []);
             updateDashboardBlockFilter();
         }
+
         function updateBlockFilter() {
             const gov = document.getElementById('governorate-filter').value;
             const city = document.getElementById('city-filter').value;
@@ -346,6 +360,7 @@
             populateSelect('block-filter', (gov && city && sec && blocks[`${gov}-${city}-${sec}`]) ? blocks[`${gov}-${city}-${sec}`] : []);
             renderCRNList();
         }
+
         function updateDashboardBlockFilter() {
             const gov = document.getElementById('dashboard-governorate').value;
             const city = document.getElementById('dashboard-city').value;
@@ -353,6 +368,7 @@
             populateSelect('dashboard-block', (gov && city && sec && blocks[`${gov}-${city}-${sec}`]) ? blocks[`${gov}-${city}-${sec}`] : []);
             renderDashboard();
         }
+
         function resetDashboardFilters() {
             document.getElementById('dashboard-search').value = "";
             document.getElementById('dashboard-governorate').value = "";
@@ -361,38 +377,33 @@
             dashboardCurrentPage = 1;
             renderDashboard();
         }
+
         function debounceSearch() {
             clearTimeout(searchTimeout);
-            searchTimeout = setTimeout(() => {
-                currentPage = 1;
-                renderCRNList();
-            }, 300);
+            searchTimeout = setTimeout(() => { currentPage = 1; renderCRNList(); }, 300);
         }
+
         function debounceDashboardSearch() {
             clearTimeout(dashboardSearchTimeout);
-            dashboardSearchTimeout = setTimeout(() => {
-                dashboardCurrentPage = 1;
-                renderDashboard();
-            }, 300);
+            dashboardSearchTimeout = setTimeout(() => { dashboardCurrentPage = 1; renderDashboard(); }, 300);
         }
+
         function showPage(pageId, userType = "") {
             document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
             const pageElement = document.getElementById(pageId);
-            if (pageElement)
-                pageElement.classList.add('active');
+            if (pageElement) pageElement.classList.add('active');
             currentUserType = userType;
             if (pageId === 'main-page') {
                 const userTypeLabel = document.getElementById('user-type-label');
-                if (userTypeLabel)
-                    userTypeLabel.textContent = userType === 'office' ? 'المطلوب من المكتب' : 'المطلوب من الموقع';
+                if (userTypeLabel) userTypeLabel.textContent = userType === 'office' ? 'المطلوب من المكتب' : 'المطلوب من الموقع';
                 currentPage = 1;
                 renderCRNList();
-            }
-            else if (pageId === 'dashboard-page') {
+            } else if (pageId === 'dashboard-page') {
                 dashboardCurrentPage = 1;
                 renderDashboard();
             }
         }
+
         function applyFilters() {
             const govFilter = document.getElementById('governorate-filter').value;
             const cityFilter = document.getElementById('city-filter').value;
@@ -400,43 +411,41 @@
             const blockFilter = document.getElementById('block-filter').value;
             const searchTerm = document.getElementById('search-box').value.toLowerCase();
             let data = buildingsData;
-            if (govFilter)
-                data = data.filter(b => b.governorate === govFilter);
-            if (cityFilter)
-                data = data.filter(b => b.city === cityFilter);
-            if (sectorFilter)
-                data = data.filter(b => b.sector === sectorFilter);
-            if (blockFilter)
-                data = data.filter(b => b.block === blockFilter);
-            if (searchTerm) {
-                data = data.filter(b => (b.crn && b.crn.toString().toLowerCase().includes(searchTerm)) ||
-                    (b.governorate && b.governorate.toLowerCase().includes(searchTerm)) ||
-                    (b.city && b.city.toLowerCase().includes(searchTerm)));
-            }
+
             if (currentUserType === 'office') {
                 data = data.filter(b => !b.map_confirmed && (!b.needs_field_visit || b.site_confirmed));
+            } else if (currentUserType === 'field') {
+                data = data.filter(b => b.needs_field_visit && !b.site_confirmed && !b.site_issue_reported);
             }
-            else if (currentUserType === 'field') {
-                data = data.filter(b => b.needs_field_visit && !b.site_confirmed);
+
+            if (govFilter) data = data.filter(b => b.governorate === govFilter);
+            if (cityFilter) data = data.filter(b => b.city === cityFilter);
+            if (sectorFilter) data = data.filter(b => b.sector === sectorFilter);
+            if (blockFilter) data = data.filter(b => b.block === blockFilter);
+
+            if (searchTerm) {
+                data = data.filter(b =>
+                    (b.crn && b.crn.toString().toLowerCase().includes(searchTerm)) ||
+                    (b.governorate && b.governorate.toLowerCase().includes(searchTerm)) ||
+                    (b.city && b.city.toLowerCase().includes(searchTerm))
+                );
             }
             return data;
         }
+
         function renderCRNList() {
             filteredData = applyFilters();
             const pageSizeSelector = document.getElementById('page-size');
             pageSize = pageSizeSelector.value === 'all' ? filteredData.length : parseInt(pageSizeSelector.value, 10) || 50;
             totalPages = Math.ceil(filteredData.length / pageSize) || 1;
-            if (currentPage > totalPages)
-                currentPage = totalPages;
+            if (currentPage > totalPages) currentPage = totalPages;
             const pageData = filteredData.slice((currentPage - 1) * pageSize, currentPage * pageSize);
-            const resultsCountEl = document.getElementById('results-count');
-            if (resultsCountEl)
-                resultsCountEl.textContent = `النتائج: ${filteredData.length}`;
+            
+            document.getElementById('results-count').textContent = `النتائج: ${filteredData.length}`;
             updatePaginationControls('main');
             const listElement = document.getElementById('crn-list');
-            if (!listElement)
-                return;
             listElement.innerHTML = '';
+
             if (pageData.length === 0) {
                 listElement.innerHTML = `<div class="card" style="text-align:center; color: var(--muted-text);">لا توجد مهام حالياً.</div>`;
                 return;
@@ -450,34 +459,40 @@
             });
             listElement.appendChild(fragment);
         }
+
         function generateCRNItemHTML(b) {
             let statusBadge = '';
-            if (b.map_confirmed) {
+            if (b.site_issue_reported) {
+                statusBadge = '<span class="status-badge status-danger"><i class="fas fa-exclamation-circle"></i> تم الإبلاغ عن مشكلة</span>';
+            } else if (b.map_confirmed) {
                 statusBadge = '<span class="status-badge status-map"><i class="fas fa-check-circle"></i> مكتمل</span>';
-            }
-            else if (b.site_confirmed) {
+            } else if (b.site_confirmed) {
                 statusBadge = '<span class="status-badge status-site"><i class="fas fa-user-check"></i> تم تأكيد الموقع</span>';
-            }
-            else if (b.needs_field_visit) {
+            } else if (b.needs_field_visit) {
                 statusBadge = '<span class="status-badge status-field"><i class="fas fa-shipping-fast"></i> مرسل للموقع</span>';
-            }
-            else {
+            } else {
                 statusBadge = '<span class="status-badge status-unknown"><i class="fas fa-hourglass-start"></i> بانتظار المكتب</span>';
             }
+
             let actionsHTML = '';
             if (currentUserType === 'office') {
-                if (b.site_confirmed) {
-                    actionsHTML = `<button class="btn btn-primary action-btn" onclick="confirmOnMap('${b.db_key}')"><i class="fas fa-map-marked-alt"></i> تأكيد نهائي على الخريطة</button>`;
+                if (!b.map_confirmed) {
+                     if (b.site_confirmed) {
+                        actionsHTML = `<button class="btn btn-primary action-btn" onclick="confirmOnMap('${b.db_key}')"><i class="fas fa-map-marked-alt"></i> تأكيد نهائي على الخريطة</button>`;
+                    } else {
+                        actionsHTML = `<button class="btn btn-primary action-btn" onclick="confirmOnMap('${b.db_key}')"><i class="fas fa-map-marked-alt"></i> تأكيد على الخريطة</button><button class="btn btn-secondary action-btn" onclick="sendToField('${b.db_key}')"><i class="fas fa-route"></i> إرسال للموقع</button>`;
+                    }
                 }
-                else {
-                    actionsHTML = `<button class="btn btn-primary action-btn" onclick="confirmOnMap('${b.db_key}')"><i class="fas fa-map-marked-alt"></i> تأكيد على الخريطة</button><button class="btn btn-secondary action-btn" onclick="sendToField('${b.db_key}')"><i class="fas fa-route"></i> إرسال للموقع</button>`;
-                }
+            } else if (currentUserType === 'field' && b.needs_field_visit && !b.site_confirmed && !b.site_issue_reported) {
+                actionsHTML = `
+                    <button class="btn btn-primary action-btn" onclick="confirmSiteVisit('${b.db_key}')"><i class="fas fa-check"></i> تأكيد الزيارة الميدانية</button>
+                    <button class="btn btn-danger action-btn" onclick="openDetailsModal('${b.db_key}')"><i class="fas fa-exclamation-triangle"></i> الإبلاغ عن مشكلة</button>
+                `;
             }
-            else if (currentUserType === 'field' && b.needs_field_visit && !b.site_confirmed) {
-                actionsHTML = `<button class="btn btn-primary action-btn" onclick="confirmSiteVisit('${b.db_key}')"><i class="fas fa-check"></i> تأكيد الزيارة الميدانية</button>`;
-            }
+
             return `<div class="crn-header"><span class="crn-id">${b.crn}</span>${statusBadge}</div><div class="crn-details"><div class="detail-item"><div class="detail-label"><i class="fas fa-globe-africa"></i> المحافظة</div><div>${b.governorate || 'N/A'}</div></div><div class="detail-item"><div class="detail-label"><i class="fas fa-city"></i> المدينة</div><div>${b.city || 'N/A'}</div></div><div class="detail-item"><div class="detail-label"><i class="fas fa-th-large"></i> القطاع</div><div>${b.sector || 'N/A'}</div></div><div class="detail-item"><div class="detail-label"><i class="fas fa-landmark"></i> البلوك</div><div>${b.block || 'N/A'}</div></div></div>${actionsHTML ? `<div class="actions">${actionsHTML}</div>` : ''}`;
         }
+        
         function applyDashboardFilters() {
             const govFilter = document.getElementById('dashboard-governorate').value;
             const cityFilter = document.getElementById('dashboard-city').value;
@@ -486,24 +501,26 @@
             const statusFilter = document.getElementById('dashboard-status-filter').value;
             const searchTerm = document.getElementById('dashboard-search').value.toLowerCase();
             let data = buildingsData;
-            if (govFilter)
-                data = data.filter(b => b.governorate === govFilter);
-            if (cityFilter)
-                data = data.filter(b => b.city === cityFilter);
-            if (sectorFilter)
-                data = data.filter(b => b.sector === sectorFilter);
-            if (blockFilter)
-                data = data.filter(b => b.block === blockFilter);
+            
+            if (govFilter) data = data.filter(b => b.governorate === govFilter);
+            if (cityFilter) data = data.filter(b => b.city === cityFilter);
+            if (sectorFilter) data = data.filter(b => b.sector === sectorFilter);
+            if (blockFilter) data = data.filter(b => b.block === blockFilter);
+            
             if (statusFilter) {
-                if (statusFilter === 'needs-office-action')
-                    data = data.filter(b => !b.map_confirmed && !b.needs_field_visit && !b.site_confirmed);
-                else if (statusFilter === 'needs-field-visit')
-                    data = data.filter(b => b.needs_field_visit && !b.site_confirmed);
-                else if (statusFilter === 'field-confirmed')
+                if (statusFilter === 'needs-office-action') {
+                    data = data.filter(b => !b.map_confirmed && !b.needs_field_visit && !b.site_confirmed && !b.site_issue_reported);
+                } else if (statusFilter === 'needs-field-visit') {
+                    data = data.filter(b => b.needs_field_visit && !b.site_confirmed && !b.site_issue_reported);
+                } else if (statusFilter === 'field-confirmed') {
                     data = data.filter(b => b.site_confirmed && !b.map_confirmed);
-                else if (statusFilter === 'map-confirmed')
+                } else if (statusFilter === 'map-confirmed') {
                     data = data.filter(b => b.map_confirmed);
+                } else if (statusFilter === 'site-issue-reported') {
+                    data = data.filter(b => b.site_issue_reported);
+                }
             }
+
             if (searchTerm) {
                 data = data.filter(b => (b.crn && b.crn.toString().toLowerCase().includes(searchTerm)) ||
                     (b.governorate && b.governorate.toLowerCase().includes(searchTerm)) ||
@@ -511,23 +528,19 @@
             }
             return data;
         }
+        
         function renderDashboard() {
             updateDashboardStats();
             dashboardFilteredData = applyDashboardFilters();
             const pageSizeSelector = document.getElementById('dashboard-page-size');
             dashboardPageSize = pageSizeSelector.value === 'all' ? dashboardFilteredData.length : parseInt(pageSizeSelector.value, 10) || 100;
             dashboardTotalPages = Math.ceil(dashboardFilteredData.length / dashboardPageSize) || 1;
-            if (dashboardCurrentPage > dashboardTotalPages)
-                dashboardCurrentPage = dashboardTotalPages;
+            if (dashboardCurrentPage > dashboardTotalPages) dashboardCurrentPage = dashboardTotalPages;
             const pageData = dashboardFilteredData.slice((dashboardCurrentPage - 1) * dashboardPageSize, dashboardCurrentPage * dashboardPageSize);
-            const resultsCountEl = document.getElementById('dashboard-results-count');
-            if (resultsCountEl)
-                resultsCountEl.textContent = `النتائج: ${dashboardFilteredData.length}`;
+            document.getElementById('dashboard-results-count').textContent = `النتائج: ${dashboardFilteredData.length}`;
             updatePaginationControls('dashboard');
             const tableBody = document.querySelector("#buildings-table tbody");
             const noDataEl = document.getElementById('dashboard-no-data');
-            if (!tableBody || !noDataEl)
-                return;
             tableBody.innerHTML = '';
             if (pageData.length === 0) {
                 noDataEl.style.display = 'block';
@@ -538,21 +551,16 @@
             pageData.forEach(b => {
                 const row = document.createElement('tr');
                 let statusText = 'تحتاج إجراء مكتبي';
-                if (b.map_confirmed) {
-                    statusText = 'مكتمل';
-                    row.classList.add('completed-row');
-                }
-                else if (b.site_confirmed) {
-                    statusText = 'تم تأكيد الموقع';
-                }
-                else if (b.needs_field_visit) {
-                    statusText = 'تحتاج زيارة ميدانية';
-                }
+                if (b.map_confirmed) { statusText = 'مكتمل'; row.classList.add('completed-row'); }
+                else if (b.site_issue_reported) { statusText = `مشكلة: ${b.site_issue_details || ''}`; }
+                else if (b.site_confirmed) { statusText = 'تم تأكيد الموقع'; }
+                else if (b.needs_field_visit) { statusText = 'تحتاج زيارة ميدانية'; }
                 row.innerHTML = `<td>${b.crn}</td><td>${b.governorate || ''}</td><td>${b.city || ''}</td><td>${b.sector || ''}</td><td>${b.block || ''}</td><td>${statusText}</td>`;
                 fragment.appendChild(row);
             });
             tableBody.appendChild(fragment);
         }
+
         function updatePaginationControls(view) {
             const prefix = view === 'main' ? '' : 'dashboard-';
             const pageInfo = document.getElementById(`${prefix}page-info`);
@@ -560,92 +568,60 @@
             const nextBtn = document.getElementById(`${prefix}next-btn`);
             const current = view === 'main' ? currentPage : dashboardCurrentPage;
             const total = view === 'main' ? totalPages : dashboardTotalPages;
-            if (pageInfo)
-                pageInfo.textContent = `صفحة ${current || 1} من ${total || 1}`;
-            if (prevBtn)
-                prevBtn.disabled = current <= 1;
-            if (nextBtn)
-                nextBtn.disabled = current >= total;
+            if (pageInfo) pageInfo.textContent = `صفحة ${current || 1} من ${total || 1}`;
+            if (prevBtn) prevBtn.disabled = current <= 1;
+            if (nextBtn) nextBtn.disabled = current >= total;
         }
-        function nextPage() { if (currentPage < totalPages) {
-            currentPage++;
-            renderCRNList();
-        } }
-        function previousPage() { if (currentPage > 1) {
-            currentPage--;
-            renderCRNList();
-        } }
+        
+        function nextPage() { if (currentPage < totalPages) { currentPage++; renderCRNList(); } }
+        function previousPage() { if (currentPage > 1) { currentPage--; renderCRNList(); } }
         function changePageSize() { currentPage = 1; renderCRNList(); }
-        function nextDashboardPage() { if (dashboardCurrentPage < dashboardTotalPages) {
-            dashboardCurrentPage++;
-            renderDashboard();
-        } }
-        function previousDashboardPage() { if (dashboardCurrentPage > 1) {
-            dashboardCurrentPage--;
-            renderDashboard();
-        } }
+        function nextDashboardPage() { if (dashboardCurrentPage < dashboardTotalPages) { dashboardCurrentPage++; renderDashboard(); } }
+        function previousDashboardPage() { if (dashboardCurrentPage > 1) { dashboardCurrentPage--; renderDashboard(); } }
         function changeDashboardPageSize() { dashboardCurrentPage = 1; renderDashboard(); }
+        
         function confirmOnMap(db_key) { database.ref('/buildings/' + db_key).update({ map_confirmed: true, map_timestamp: new Date().toISOString() }); }
         function sendToField(db_key) { database.ref('/buildings/' + db_key).update({ needs_field_visit: true }); }
         function confirmSiteVisit(db_key) { database.ref('/buildings/' + db_key).update({ site_confirmed: true, site_timestamp: new Date().toISOString() }); }
+        
         function updateHomepageTaskCounts() {
             const officeTasks = buildingsData.filter(b => !b.map_confirmed && (!b.needs_field_visit || b.site_confirmed)).length;
-            const officeTaskCountEl = document.getElementById('office-task-count');
-            if (officeTaskCountEl)
-                officeTaskCountEl.textContent = officeTasks.toString();
-            const fieldTasks = buildingsData.filter(b => b.needs_field_visit && !b.site_confirmed).length;
-            const fieldTaskCountEl = document.getElementById('field-task-count');
-            if (fieldTaskCountEl)
-                fieldTaskCountEl.textContent = fieldTasks.toString();
+            document.getElementById('office-task-count').textContent = officeTasks.toString();
+            
+            const fieldTasks = buildingsData.filter(b => b.needs_field_visit && !b.site_confirmed && !b.site_issue_reported).length;
+            document.getElementById('field-task-count').textContent = fieldTasks.toString();
         }
+
         function updateDashboardStats() {
-            const statTotalEl = document.getElementById('stat-total');
-            if (statTotalEl)
-                statTotalEl.textContent = buildingsData.length.toString();
-            const statCompletedEl = document.getElementById('stat-completed');
-            if (statCompletedEl)
-                statCompletedEl.textContent = buildingsData.filter(b => b.map_confirmed).length.toString();
-            const statAtFieldEl = document.getElementById('stat-at-field');
-            if (statAtFieldEl)
-                statAtFieldEl.textContent = buildingsData.filter(b => b.needs_field_visit && !b.site_confirmed).length.toString();
-            const officeQueue = buildingsData.filter(b => !b.map_confirmed && (!b.needs_field_visit || b.site_confirmed)).length;
-            const statAtOfficeEl = document.getElementById('stat-at-office');
-            if (statAtOfficeEl)
-                statAtOfficeEl.textContent = officeQueue.toString();
+            document.getElementById('stat-total').textContent = buildingsData.length.toString();
+            document.getElementById('stat-completed').textContent = buildingsData.filter(b => b.map_confirmed).length.toString();
+            document.getElementById('stat-at-field').textContent = buildingsData.filter(b => b.needs_field_visit && !b.site_confirmed && !b.site_issue_reported).length.toString();
+            const officeQueue = buildingsData.filter(b => !b.map_confirmed && (!b.needs_field_visit || b.site_confirmed) && !b.site_issue_reported).length;
+            document.getElementById('stat-at-office').textContent = officeQueue.toString();
         }
+
         function handleFileUpload(event) {
-            var _a;
-            const target = event.target;
-            const file = (_a = target.files) === null || _a === void 0 ? void 0 : _a[0];
-            if (!file)
-                return;
-            const loadingOverlay = document.getElementById('loading-overlay');
-            if (loadingOverlay)
-                loadingOverlay.style.display = 'flex';
+            const file = event.target.files?.[0];
+            if (!file) return;
+            document.getElementById('loading-overlay').style.display = 'flex';
             const reader = new FileReader();
             reader.onload = (e) => {
-                var _a;
                 try {
-                    const arrayBuffer = (_a = e.target) === null || _a === void 0 ? void 0 : _a.result;
-                    if (!arrayBuffer)
-                        throw new Error('فشل قراءة الملف.');
+                    const arrayBuffer = e.target?.result;
+                    if (!arrayBuffer) throw new Error('فشل قراءة الملف.');
                     const workbook = XLSX.read(new Uint8Array(arrayBuffer), { type: 'array' });
                     const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { header: 1 });
-                    if (jsonData.length < 2) {
-                        throw new Error('الملف فارغ أو غير صالح.');
-                    }
+                    if (jsonData.length < 2) throw new Error('الملف فارغ أو غير صالح.');
                     const headers = jsonData[0].map(h => h.toString().toLowerCase().trim());
                     const crnIndex = headers.indexOf('crn');
-                    if (crnIndex === -1) {
-                        throw new Error('الملف يجب أن يحتوي على عمود باسم "crn".');
-                    }
+                    if (crnIndex === -1) throw new Error('الملف يجب أن يحتوي على عمود باسم "crn".');
+                    
                     const updates = {};
                     const allCrns = new Set(buildingsData.map(b => b.crn.toString()));
                     for (let i = 1; i < jsonData.length; i++) {
                         const row = jsonData[i];
                         const crn = row[crnIndex] ? row[crnIndex].toString() : null;
-                        if (!crn || allCrns.has(crn))
-                            continue;
+                        if (!crn || allCrns.has(crn)) continue;
                         const newRecord = { crn: crn };
                         headers.forEach((h, idx) => {
                             if (h !== 'crn' && row[idx] !== undefined) {
@@ -653,31 +629,26 @@
                             }
                         });
                         const newKey = dbRef.push().key;
-                        if (newKey)
-                            updates[newKey] = newRecord;
+                        if (newKey) updates[newKey] = newRecord;
                     }
                     if (Object.keys(updates).length > 0) {
                         dbRef.update(updates).then(() => {
                             alert(`تمت إضافة ${Object.keys(updates).length} سجل جديد بنجاح.`);
-                            if (loadingOverlay)
-                                loadingOverlay.style.display = 'none';
+                            document.getElementById('loading-overlay').style.display = 'none';
                         });
-                    }
-                    else {
+                    } else {
                         alert("لم يتم العثور على سجلات جديدة لإضافتها.");
-                        if (loadingOverlay)
-                            loadingOverlay.style.display = 'none';
+                        document.getElementById('loading-overlay').style.display = 'none';
                     }
-                }
-                catch (error) {
+                } catch (error) {
                     alert(`خطأ: ${error.message}`);
-                    if (loadingOverlay)
-                        loadingOverlay.style.display = 'none';
+                    document.getElementById('loading-overlay').style.display = 'none';
                 }
             };
             reader.readAsArrayBuffer(file);
-            target.value = ''; // Reset file input
+            event.target.value = '';
         }
+
         function handleDeleteFilteredData() {
             if (dashboardFilteredData.length === 0) {
                 alert("يرجى تحديد البيانات المراد حذفها باستخدام الفلاتر أولاً.");
@@ -686,34 +657,24 @@
             if (!confirm(`هل أنت متأكد من حذف ${dashboardFilteredData.length} سجل/سجلات المحددة نهائياً؟`)) {
                 return;
             }
-            const loadingOverlay = document.getElementById('loading-overlay');
-            if (loadingOverlay)
-                loadingOverlay.style.display = 'flex';
+            document.getElementById('loading-overlay').style.display = 'flex';
             const updates = {};
-            dashboardFilteredData.forEach(r => {
-                updates[r.db_key] = null;
-            });
+            dashboardFilteredData.forEach(r => { updates[r.db_key] = null; });
             dbRef.update(updates).then(() => {
                 alert(`تم حذف ${dashboardFilteredData.length} سجل بنجاح.`);
-                if (loadingOverlay)
-                    loadingOverlay.style.display = 'none';
+                document.getElementById('loading-overlay').style.display = 'none';
             }).catch(e => {
                 alert(`فشل الحذف: ${e.message}`);
-                if (loadingOverlay)
-                    loadingOverlay.style.display = 'none';
+                document.getElementById('loading-overlay').style.display = 'none';
             });
         }
+        
         function exportCurrentView() {
             let dataToExport = [];
             const activePage = document.querySelector('.page.active');
-            if (!activePage)
-                return;
-            if (activePage.id === 'main-page') {
-                dataToExport = filteredData;
-            }
-            else if (activePage.id === 'dashboard-page') {
-                dataToExport = dashboardFilteredData;
-            }
+            if (!activePage) return;
+            if (activePage.id === 'main-page') dataToExport = filteredData;
+            else if (activePage.id === 'dashboard-page') dataToExport = dashboardFilteredData;
             if (dataToExport.length === 0) {
                 alert("لا توجد بيانات لتصديرها.");
                 return;
@@ -723,31 +684,73 @@
             XLSX.utils.book_append_sheet(workbook, worksheet, "Data");
             XLSX.writeFile(workbook, "GasCRN_Export.xlsx");
         }
+        
         function promptForManagerPassword() {
             const modal = document.getElementById('manager-modal');
             const passwordInput = document.getElementById('manager-password');
-            if (modal)
-                modal.style.display = 'flex';
-            if (passwordInput)
-                passwordInput.focus();
+            if (modal) modal.style.display = 'flex';
+            if (passwordInput) passwordInput.focus();
         }
+        
         function closeManagerPrompt() {
             const modal = document.getElementById('manager-modal');
             const passwordInput = document.getElementById('manager-password');
-            if (modal)
-                modal.style.display = 'none';
-            if (passwordInput)
-                passwordInput.value = '';
+            if (modal) modal.style.display = 'none';
+            if (passwordInput) passwordInput.value = '';
         }
+        
         function checkManagerPassword() {
             const passwordInput = document.getElementById('manager-password');
-            if ((passwordInput === null || passwordInput === void 0 ? void 0 : passwordInput.value) === "Admin@123") {
+            if (passwordInput?.value === "Admin@123") {
                 closeManagerPrompt();
                 showPage('dashboard-page');
-            }
-            else {
+            } else {
                 alert("كلمة مرور غير صحيحة!");
             }
+        }
+
+        // --- NEW FUNCTIONS FOR PROBLEM REPORTING ---
+        function openDetailsModal(db_key) {
+            document.getElementById('modal-db-key-input').value = db_key;
+            const modal = document.getElementById('details-modal');
+            if (modal) modal.style.display = 'flex';
+        }
+
+        function closeDetailsModal() {
+            const modal = document.getElementById('details-modal');
+            if (modal) modal.style.display = 'none';
+            document.getElementById('problem-details-input').value = '';
+            document.getElementById('modal-db-key-input').value = '';
+        }
+
+        function submitProblemDetails() {
+            const db_key = document.getElementById('modal-db-key-input').value;
+            const details = document.getElementById('problem-details-input').value;
+
+            if (!db_key) {
+                alert("حدث خطأ. لا يمكن العثور على معرّف المهمة.");
+                return;
+            }
+            if (!details || details.trim() === '') {
+                alert("الرجاء كتابة تفاصيل المشكلة قبل التأكيد.");
+                return;
+            }
+
+            const updateData = {
+                site_issue_reported: true,
+                site_issue_details: details,
+                site_issue_timestamp: new Date().toISOString()
+            };
+
+            database.ref('/buildings/' + db_key).update(updateData)
+                .then(() => {
+                    console.log("Problem reported successfully for key:", db_key);
+                    closeDetailsModal();
+                })
+                .catch((error) => {
+                    console.error("Error reporting problem:", error);
+                    alert("فشل الإبلاغ عن المشكلة. الرجاء المحاولة مرة أخرى.");
+                });
         }
     </script>
 </body>
